@@ -1,6 +1,6 @@
 
 import { EventEmitter } from 'events'
-import puppeteer = require('puppeteer')
+import puppeteer = require('puppeteer-core')
 
 declare namespace WAWebJS {
 
