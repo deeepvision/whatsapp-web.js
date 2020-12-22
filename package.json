@@ -9,6 +9,9 @@
     "shell": "node --experimental-repl-await ./shell.js",
     "generate-docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/deeepvision/whatsapp-web.js.git"

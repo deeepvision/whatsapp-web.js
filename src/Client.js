@@ -61,9 +61,13 @@ class Client extends EventEmitter {
      * Sets up events and requirements, kicks off authentication request
      */
     async initialize() {
-        // const browser = await puppeteer.launch(this.options.puppeteer);
         const browser = await puppeteer.connect(this.options.puppeteer);
-        const page = (await browser.pages())[0];
+        let page = (await browser.pages())[0];
+
+        if (!page) {
+            const context = await browser.createIncognitoBrowserContext();
+            page = await context._browser.newPage();
+        }
         page.setUserAgent(this.options.userAgent);
 
         this.pupBrowser = browser;
@@ -90,7 +94,11 @@ class Client extends EventEmitter {
         if (this.options.session) {
             // Check if session restore was successfull 
             try {
-                await page.waitForSelector(KEEP_PHONE_CONNECTED_IMG_SELECTOR, { timeout: this.options.authTimeoutMs });
+                await page.waitForFunction(
+                    selector => !!document.querySelector(selector),
+                    { timeout: this.options.authTimeoutMs },
+                    KEEP_PHONE_CONNECTED_IMG_SELECTOR
+                );  
             } catch (err) {
                 if (err.name === 'TimeoutError') {
                     /**
@@ -99,7 +107,8 @@ class Client extends EventEmitter {
                      * @param {string} message
                      */
                     this.emit(Events.AUTHENTICATION_FAILURE, 'Unable to log in. Are the session details valid?');
-                    browser.close();
+                    
+                    await page.close();
                     if (this.options.restartOnAuthFail) {
                         // session restore failed so try again but without session to force new authentication
                         this.options.session = null;
@@ -380,7 +389,8 @@ class Client extends EventEmitter {
         if (this._qrRefreshInterval) {
             clearInterval(this._qrRefreshInterval);
         }
-        await this.pupBrowser.close();
+        // await this.pupBrowser.close();
+        await this.pupPage.close();
     }
 
     /**
@@ -732,7 +742,7 @@ class Client extends EventEmitter {
 
         const createRes = await this.pupPage.evaluate(async (name, participantIds) => {
             const res = await window.Store.Wap.createGroup(name, participantIds);
-            console.log(res);
+            // console.log(res);
             if (!res.status === 200) {
                 throw 'An error occurred while creating the group!';
             }
