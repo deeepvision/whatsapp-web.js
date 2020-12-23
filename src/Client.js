@@ -64,7 +64,13 @@ class Client extends EventEmitter {
         const browser = await puppeteer.connect(this.options.puppeteer);
         let page = (await browser.pages())[0];
 
-        if (!page) {
+        const pageIsConnetcted = !page ? null: await page.waitForFunction(
+            selector => !!document.querySelector(selector),
+            { timeout: 0 },
+            KEEP_PHONE_CONNECTED_IMG_SELECTOR
+        );  
+
+        if (!page || pageIsConnetcted) {
             const context = await browser.createIncognitoBrowserContext();
             page = await context._browser.newPage();
         }
@@ -146,7 +152,11 @@ class Client extends EventEmitter {
             this._qrRefreshInterval = setInterval(getQrCode, this.options.qrRefreshIntervalMs);
 
             // Wait for code scan
-            await page.waitForSelector(KEEP_PHONE_CONNECTED_IMG_SELECTOR, { timeout: 0 });
+            await page.waitForFunction(
+                selector => !!document.querySelector(selector),
+                { timeout: 0 },
+                KEEP_PHONE_CONNECTED_IMG_SELECTOR
+            );  
             clearInterval(this._qrRefreshInterval);
             this._qrRefreshInterval = undefined;
 
