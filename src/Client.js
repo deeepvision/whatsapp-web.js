@@ -64,6 +64,8 @@ class Client extends EventEmitter {
         const browser = await puppeteer.connect(this.options.puppeteer);
         let page = (await browser.pages())[0];
 
+        const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
+        
         const pageIsConnetcted = !page ? null: await page.waitForFunction(
             selector => !!document.querySelector(selector),
             { timeout: 0 },
@@ -94,8 +96,6 @@ class Client extends EventEmitter {
             waitUntil: 'load',
             timeout: 0,
         });
-
-        const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
 
         if (this.options.session) {
             // Check if session restore was successfull 
