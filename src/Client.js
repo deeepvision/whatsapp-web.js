@@ -75,6 +75,7 @@ class Client extends EventEmitter {
 
             if (!pageIsConnected) {
                 page = p;
+                break;
             }
         }
 
