@@ -65,8 +65,8 @@ class Client extends EventEmitter {
         let page = (await browser.pages())[0];
 
         const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
-        
-        const pageIsConnetcted = !page ? null: await page.waitForFunction(
+
+        const pageIsConnetcted = !page ? null : await page.waitForFunction(
             selector => !!document.querySelector(selector),
             { timeout: 0 },
             KEEP_PHONE_CONNECTED_IMG_SELECTOR
