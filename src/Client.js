@@ -62,17 +62,23 @@ class Client extends EventEmitter {
      */
     async initialize() {
         const browser = await puppeteer.connect(this.options.puppeteer);
-        let page = (await browser.pages())[0];
 
         const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
 
-        const pageIsConnetcted = !page ? null : await page.waitForFunction(
-            selector => !!document.querySelector(selector),
-            { timeout: 0 },
-            KEEP_PHONE_CONNECTED_IMG_SELECTOR
-        );  
+        let page = null;
+        for (const p of await browser.pages()) {
+            const pageIsConnected = await p.waitForFunction(
+                selector => !!document.querySelector(selector),
+                { timeout: 0 },
+                KEEP_PHONE_CONNECTED_IMG_SELECTOR
+            );  
 
-        if (!page || pageIsConnetcted) {
+            if (!pageIsConnected) {
+                page = p;
+            }
+        }
+
+        if (!page) {
             const context = await browser.createIncognitoBrowserContext();
             page = await context._browser.newPage();
         }
