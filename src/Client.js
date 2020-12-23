@@ -63,9 +63,9 @@ class Client extends EventEmitter {
     async initialize() {
         const browser = await puppeteer.connect(this.options.puppeteer);
 
-        console.log('browser connected');
-
         const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
+
+        // console.log(this.options.session);
 
         let page = null;
         for (const p of await browser.pages()) {
@@ -77,6 +77,7 @@ class Client extends EventEmitter {
                         KEEP_PHONE_CONNECTED_IMG_SELECTOR
                     );  
                 } catch (error) {
+                    // console.log('close page');
                     await p.close();
                 }
 
@@ -92,6 +93,7 @@ class Client extends EventEmitter {
 
                     if (localStorageData.WASecretBundle === this.options.session.WASecretBundle) { 
                         page = p;
+                        // console.log('use this page');
                         break;
                     }
                 }
@@ -103,8 +105,9 @@ class Client extends EventEmitter {
         }
 
         if (!page) {
+            // console.log('create new page');
             const context = await browser.createIncognitoBrowserContext();
-            page = await context._browser.newPage();
+            page = await context.newPage();
         }
         page.setUserAgent(this.options.userAgent);
 
