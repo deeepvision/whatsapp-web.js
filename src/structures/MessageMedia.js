@@ -11,7 +11,7 @@ const mime = require('mime');
  * @param {?string} filename Document file name
  */
 class MessageMedia {
-    constructor(mimetype, data, filename) {
+    constructor(mimetype, data, filename, url) {
         /**
          * MIME type of the attachment
          * @type {string}
@@ -29,6 +29,8 @@ class MessageMedia {
          * @type {?string}
          */
         this.filename = filename;
+
+        this.url = url;
     }
 
     /**
@@ -37,11 +39,12 @@ class MessageMedia {
      * @returns {MessageMedia}
      */
     static fromFilePath(filePath) {
+        console.log(filePath);
         const b64data = fs.readFileSync(filePath, {encoding: 'base64'});
         const mimetype = mime.getType(filePath); 
         const filename = path.basename(filePath);
 
-        return new MessageMedia(mimetype, b64data, filename);
+        return new MessageMedia(mimetype, b64data, filename, filePath);
     }
 }
 

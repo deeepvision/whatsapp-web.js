@@ -248,13 +248,14 @@ class Message extends Base {
             return {
                 data: data.split(',')[1],
                 mimetype: msg.mimetype,
-                filename: msg.filename
+                filename: msg.filename,
+                url: msg.clientUrl,
             };
 
         }, this.id._serialized);
 
         if (!result) return undefined;
-        return new MessageMedia(result.mimetype, result.data, result.filename);
+        return new MessageMedia(result.mimetype, result.data, result.filename, result.url);
     }
 
     /**

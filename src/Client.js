@@ -47,6 +47,7 @@ const { ClientInfo, Message, MessageMedia, Contact, Location, GroupNotification 
  * @fires Client#change_state
  * @fires Client#change_battery
  */
+console.log('ok');
 class Client extends EventEmitter {
     constructor(options = {}) {
         super();
@@ -61,25 +62,46 @@ class Client extends EventEmitter {
      * Sets up events and requirements, kicks off authentication request
      */
     async initialize() {
+        console.log(this.options.puppeteer);
         const browser = await puppeteer.connect(this.options.puppeteer);
+
+        console.log('browser connected');
 
         const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
 
         let page = null;
         for (const p of await browser.pages()) {
-            const pageIsConnected = await p.waitForFunction(
-                selector => !!document.querySelector(selector),
-                { timeout: 0 },
-                KEEP_PHONE_CONNECTED_IMG_SELECTOR
-            );  
+            try {
+                const localStorageData = await page.evaluate(() => {
+                    let json = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        json[key] = localStorage.getItem(key);
+                    }
+                    return json;
+                });
+              
+                console.log(localStorageData);
 
-            if (!pageIsConnected) {
-                page = p;
-                break;
+                const pageIsConnected = await p.waitForFunction(
+                    selector => !!document.querySelector(selector),
+                    { timeout: 1000 },
+                    KEEP_PHONE_CONNECTED_IMG_SELECTOR
+                );  
+
+                if (!pageIsConnected) {
+                    console.log('use page');
+                    page = p;
+                    break;
+                }
+            } catch (error) {
+                // continue;
             }
+
         }
 
         if (!page) {
+            console.log('create new page');
             const context = await browser.createIncognitoBrowserContext();
             page = await context._browser.newPage();
         }
