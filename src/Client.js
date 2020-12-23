@@ -53,8 +53,9 @@ class Client extends EventEmitter {
 
         this.options = Util.mergeDefault(DefaultOptions, options);
 
-        this.pupBrowser = null;
+        // this.pupBrowser = null;
         this.pupPage = null;
+        this.pupContext = null;
     }
 
     /**
@@ -106,8 +107,8 @@ class Client extends EventEmitter {
 
         if (!page) {
             // console.log('create new page');
-            const context = await browser.createIncognitoBrowserContext();
-            page = await context.newPage();
+            this.pupContext = await browser.createIncognitoBrowserContext();
+            page = await this.pupContext.newPage();
         }
         page.setUserAgent(this.options.userAgent);
 
@@ -147,7 +148,8 @@ class Client extends EventEmitter {
                      */
                     this.emit(Events.AUTHENTICATION_FAILURE, 'Unable to log in. Are the session details valid?');
                     
-                    await page.close();
+                    // await page.close();
+                    await this.pupContext.close();
                     if (this.options.restartOnAuthFail) {
                         // session restore failed so try again but without session to force new authentication
                         this.options.session = null;
@@ -433,7 +435,8 @@ class Client extends EventEmitter {
             clearInterval(this._qrRefreshInterval);
         }
         // await this.pupBrowser.close();
-        await this.pupPage.close();
+        // await this.pupPage.close();
+        await this.pupContext.close();
     }
 
     /**
