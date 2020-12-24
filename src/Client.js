@@ -78,8 +78,14 @@ class Client extends EventEmitter {
                         KEEP_PHONE_CONNECTED_IMG_SELECTOR
                     );  
                 } catch (error) {
-                    // console.log('close page');
-                    await p.close();
+               
+                    const pContext = p.browserContext();
+                    if (pContext.isIncognito()) {
+                        await pContext.close();
+                    } else {
+                        await p.close();
+                    }
+           
                 }
 
                 if (this.options.session) {
