@@ -65,48 +65,78 @@ class Client extends EventEmitter {
         const browser = await puppeteer.connect(this.options.puppeteer);
 
         const KEEP_PHONE_CONNECTED_IMG_SELECTOR = '[data-asset-intro-image-light="true"], [data-asset-intro-image-dark="true"]';
+        const QR_CANVAS_SELECTOR = 'canvas';
+        const QR_RELOAD = '[data-testid="refresh-large"]';
 
         // console.log(this.options.session);
 
         let page = null;
         for (const p of await browser.pages()) {
+            let isConnected = null;
+            let isQrPage = null;
+            let isQrReload = null;
             try {
                 try {
-                    await p.waitForFunction(
+                    isConnected = await p.waitForFunction(
                         selector => !!document.querySelector(selector),
                         { timeout: 3000 },
                         KEEP_PHONE_CONNECTED_IMG_SELECTOR
                     );  
                 } catch (error) {
-               
-                    const pContext = p.browserContext();
-                    if (pContext.isIncognito()) {
-                        await pContext.close();
-                    } else {
-                        await p.close();
-                    }
-           
+                    // no connected 
                 }
 
-                if (this.options.session) {
-                    const localStorageData = await p.evaluate(() => {
-                        let json = {};
-                        for (let i = 0; i < localStorage.length; i++) {
-                            const key = localStorage.key(i);
-                            json[key] = localStorage.getItem(key);
-                        }
-                        return json;
-                    });
-
-                    if (localStorageData.WASecretBundle === this.options.session.WASecretBundle) { 
-                        page = p;
-                        // console.log('use this page');
-                        break;
-                    }
+                try {
+                    isQrPage = await p.waitForFunction(
+                        selector => !!document.querySelector(selector),
+                        { timeout: 3000 },
+                        QR_CANVAS_SELECTOR
+                    );  
+                } catch (error) {
+                    // no qr page
                 }
 
+                if (isQrPage) {
+                    try {
+                        isQrReload = await p.waitForFunction(
+                            selector => !!document.querySelector(selector),
+                            { timeout: 3000 },
+                            QR_RELOAD
+                        );  
+                    } catch (error) {
+                        // is qr reload
+                    }
+    
+                }
+
+                if (!isConnected && !isQrPage || isQrReload) {
+                    throw Error('close this');
+                }
             } catch (error) {
-                // console.error(error);
+                const pContext = p.browserContext();
+                if (pContext.isIncognito()) {
+                    await pContext.close();
+                } else {
+                    await p.close();
+                }
+           
+            }
+
+            if (this.options.session && isConnected) {
+                const localStorageData = await p.evaluate(() => {
+                    let json = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        json[key] = localStorage.getItem(key);
+                    }
+                    return json;
+                });
+
+                if (localStorageData.WASecretBundle === this.options.session.WASecretBundle) { 
+                    page = p;
+                    // console.log('use this page');
+                    // break;
+                }
             }
 
         }
@@ -178,7 +208,7 @@ class Client extends EventEmitter {
 
                 // Wait for QR Code
 
-                const QR_CANVAS_SELECTOR = 'canvas';
+                // const QR_CANVAS_SELECTOR = 'canvas';
                 await page.waitForSelector(QR_CANVAS_SELECTOR, { timeout: this.options.qrTimeoutMs });
                 const qrImgData = await page.$eval(QR_CANVAS_SELECTOR, canvas => [].slice.call(canvas.getContext('2d').getImageData(0, 0, 264, 264).data));
                 const qr = jsQR(qrImgData, 264, 264).data;
@@ -191,6 +221,11 @@ class Client extends EventEmitter {
             };
             getQrCode();
             this._qrRefreshInterval = setInterval(getQrCode, this.options.qrRefreshIntervalMs);
+
+            page.on('close', () => {
+                clearInterval(this._qrRefreshInterval);
+                this._qrRefreshInterval = null;
+            });
 
             // Wait for code scan
             await page.waitForFunction(
@@ -442,7 +477,13 @@ class Client extends EventEmitter {
         }
         // await this.pupBrowser.close();
         // await this.pupPage.close();
-        await this.pupContext.close();
+        // await this.pupContext.close();
+        const pContext = this.pupPage.browserContext();
+        if (pContext.isIncognito()) {
+            await pContext.close();
+        } else {
+            await this.pupPage.close();
+        }
     }
 
     /**
